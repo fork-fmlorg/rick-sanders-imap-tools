@@ -23,7 +23,8 @@ use MIME::Base64 qw(encode_base64 decode_base64);
 #################################################################
 
 init();
-
+my $encoding_out = encoding_speculate();
+    
 get_user_list( $user_list, \@users );
 
 if ( $output_file ) {
@@ -80,7 +81,7 @@ foreach $sourceUser ( @users ) {
          $mbx =~ s/^$srcPrefix//;
          $mbx =~ s/[$srcDelim]/\//g;
          if ( $utf ) {
-            $mbx = decode( 'IMAP-UTF-7', $mbx );
+	     $mbx = encode($encoding_out, decode( 'IMAP-UTF-7', $mbx ));
          }
          if ( $output_file ) {
             if ( $stats ) {
@@ -122,7 +123,7 @@ foreach $sourceUser ( @users ) {
       foreach $_ ( @large_msgs ) {
          ($size,$mbx,$subject) = split(/\s+/, $_, 3);
          if ( $utf ) {
-            $mbx = decode( 'IMAP-UTF-7', $mbx );
+	     $mbx = encode($encoding_out, decode( 'IMAP-UTF-7', $mbx ));
          }
          $size = sprintf("%.1f", $size/1000000) . ' MB';
          Log("Writing $mbx  ($size) $subject to large_msg_report.list") if $debug;
@@ -179,6 +180,12 @@ sub init {
    }
    no warnings 'utf8';
  
+}
+
+sub encoding_speculate
+{
+    my ($os) = $^O;
+    return ($os =~ /MSWin32/) ? "shiftjis" : "UTF-8";
 }
 
 #
